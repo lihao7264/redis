@@ -30,8 +30,9 @@
 
 #ifndef _ZIPLIST_H
 #define _ZIPLIST_H
-
+// 往队头写入
 #define ZIPLIST_HEAD 0
+// 往队尾写入
 #define ZIPLIST_TAIL 1
 
 /* Each entry in the ziplist is either a string or an integer. */
@@ -43,16 +44,22 @@ typedef struct {
     long long lval;
 } ziplistEntry;
 
+// 新建一个ziplist
 unsigned char *ziplistNew(void);
+// 合并
 unsigned char *ziplistMerge(unsigned char **first, unsigned char **second);
+// 插入
 unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int slen, int where);
 unsigned char *ziplistIndex(unsigned char *zl, int index);
 unsigned char *ziplistNext(unsigned char *zl, unsigned char *p);
 unsigned char *ziplistPrev(unsigned char *zl, unsigned char *p);
 unsigned int ziplistGet(unsigned char *p, unsigned char **sval, unsigned int *slen, long long *lval);
+// 插入
 unsigned char *ziplistInsert(unsigned char *zl, unsigned char *p, unsigned char *s, unsigned int slen);
+// 删除
 unsigned char *ziplistDelete(unsigned char *zl, unsigned char **p);
 unsigned char *ziplistDeleteRange(unsigned char *zl, int index, unsigned int num);
+// 更新
 unsigned char *ziplistReplace(unsigned char *zl, unsigned char *p, unsigned char *s, unsigned int slen);
 unsigned int ziplistCompare(unsigned char *p, unsigned char *s, unsigned int slen);
 unsigned char *ziplistFind(unsigned char *zl, unsigned char *p, unsigned char *vstr, unsigned int vlen, unsigned int skip);

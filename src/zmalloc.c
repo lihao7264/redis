@@ -269,6 +269,7 @@ void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable) {
 }
 
 /* Reallocate memory and zero it or panic */
+// 能用于扩容 和 缩容。
 void *zrealloc(void *ptr, size_t size) {
     ptr = ztryrealloc_usable(ptr, size, NULL);
     if (!ptr && size != 0) zmalloc_oom_handler(size);
