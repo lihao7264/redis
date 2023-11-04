@@ -44,25 +44,45 @@
  * attempted_compress: 1 bit, boolean, used for verifying during testing.
  * extra: 10 bits, free for future use; pads out the remainder of 32 bits */
 typedef struct quicklistNode {
+    // 指向前后quicklistNode节点的指针
     struct quicklistNode *prev;
     struct quicklistNode *next;
+    // 指向listpack 或 quicklistLZF
     unsigned char *entry;
+    // listpack占用字节数
     size_t sz;             /* entry size in bytes */
+    // listpack中的元素个数
     unsigned int count : 16;     /* count of items in listpack */
+    /**
+     * encoding：表示listpack是否压缩 及 使用哪个压缩算法。
+     * 目前只有两种取值：
+     *    2：表示被压缩（使用LZF压缩算法）。
+     *    1：表示未压缩。
+     */
     unsigned int encoding : 2;   /* RAW==1 or LZF==2 */
+    // container有PLAIN和PACKED两个可选值
     unsigned int container : 2;  /* PLAIN==1 or PACKED==2 */
+    /**
+     * 当使用类似lindex 命令查看某一个已被压缩的数据时，
+     * 需把数据暂时解压，此时设置recompress=1做一个标记，等有机会再把数据重新压缩。
+     */
     unsigned int recompress : 1; /* was this node previous compressed? */
+     //只在测试用例中使用，在实际生产环境没用
     unsigned int attempted_compress : 1; /* node can't compress; too small */
+    // 预留扩展字段，暂时无用 
     unsigned int extra : 10; /* more bits to steal for future usage */
-} quicklistNode;
+} quicklistNode;// quicklist中的节点
 
 /* quicklistLZF is a 8+N byte struct holding 'sz' followed by 'compressed'.
  * 'sz' is byte length of 'compressed' field.
  * 'compressed' is LZF data with total (compressed) length 'sz'
  * NOTE: uncompressed length is stored in quicklistNode->sz.
  * When quicklistNode->entry is compressed, node->entry points to a quicklistLZF */
+// 使用 quicklistLZF 存储 listpack 压缩后的数据
 typedef struct quicklistLZF {
+    // 压缩后的字节数
     size_t sz; /* LZF size in bytes*/
+    // 压缩后的具体数据
     char compressed[];
 } quicklistLZF;
 
@@ -103,31 +123,52 @@ typedef struct quicklistBookmark {
  * 'bookmarks are an optional feature that is used by realloc this struct,
  *      so that they don't consume memory when not used. */
 typedef struct quicklist {
+     // 链表的头指针 
     quicklistNode *head;
+    // 链表的尾指针
     quicklistNode *tail;
+    // 整个quicklist中全部的元素个数，这是所有listpack中存储的元素个数之和 
     unsigned long count;        /* total count of all entries in all listpacks */
+    // 整个quicklist中quicklistNode节点的个数 
     unsigned long len;          /* number of quicklistNodes */
+    // fill（占用16bit）：用于记录listpack大小设置，存放list-max-listpack-size参数值 
     signed int fill : QL_FILL_BITS;       /* fill factor for individual nodes */
+    // compress（占用16bit）：用于存放list-compress-depth参数值， 
     unsigned int compress : QL_COMP_BITS; /* depth of end nodes not to compress;0=off */
+    // bookmark_count（占用4bit）：用于存放bookmarks数组的长度 
     unsigned int bookmark_count: QL_BM_BITS;
+    // 柔性数组 
     quicklistBookmark bookmarks[];
 } quicklist;
 
+// 迭代器
 typedef struct quicklistIter {
+    // 指向当前quicklistIter所迭代的quicklist实例 
     quicklist *quicklist;
+    // 指向当前迭代到的quicklistNode节点 
     quicklistNode *current;
+     // 指向当前迭代到的listpack节点 
     unsigned char *zi; /* points to the current element */
+    // 当前迭代到的entry在listpack中的偏移量（即第几个元素）
     long offset; /* offset in current listpack */
+     // 当前quicklistIter的迭代方向，AL_START_HEAD为正向遍历，AL_START_TAIL为反向遍历 
     int direction;
 } quicklistIter;
 
 typedef struct quicklistEntry {
+    // 所属的quicklist实例 
     const quicklist *quicklist;
+    // 所属的quicklistNode节点 
     quicklistNode *node;
+    // 指向对应的element（listpack中的elememt节点） 
     unsigned char *zi;
+    // 如果对应值为字符串，则由value指针记录 
     unsigned char *value;
+    // 如果对应值为整数，则由longval进行记录 
     long long longval;
+    // 如果对应值为字符串，则sz会记录该字符串的长度 
     size_t sz;
+     // 对应entry在listpack中的偏移量（即第几个元素）
     int offset;
 } quicklistEntry;
 
@@ -151,7 +192,9 @@ typedef struct quicklistEntry {
     ((node)->encoding == QUICKLIST_NODE_ENCODING_LZF)
 
 /* Prototypes */
+// 创建一个空 quicklist 实例
 quicklist *quicklistCreate(void);
+// 创建 quicklist 实例
 quicklist *quicklistNew(int fill, int compress);
 void quicklistSetCompressDepth(quicklist *quicklist, int depth);
 void quicklistSetFill(quicklist *quicklist, int fill);

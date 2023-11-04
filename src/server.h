@@ -1843,7 +1843,18 @@ struct redisServer {
     size_t stream_node_max_bytes;
     long long stream_node_max_entries;
     /* List parameters */
+    /*
+     指定每个 quicklistNode 节点中 listpack 的长度阈值
+      如果 list-max-listpack-size 参数为正数：表示listpack 中包含的 element 节点个数。
+      如果 list-max-listpack-size 参数为负数：只能取5 个特殊值（ -1 到 -5，表示listpack 的 5 个上限值）。
+
+    */ 
     int list_max_listpack_size;
+    /*
+    用于控制 quicklist 两端有多少个 quicklistNode 节点不被压缩
+       0（默认值）：一个特殊值，表示不对任何 quicklistNode 节点的 listpack 进行压缩。
+       大于 0 的取值：表示 quicklist 两端各有多少个节点的 listpack 不被压缩，其它位于中间部分的 quicklistNode 节点的 listpack 都要进行压缩。
+    */
     int list_compress_depth;
     /* time cache */
     redisAtomic time_t unixtime; /* Unix time sampled every cron cycle. */

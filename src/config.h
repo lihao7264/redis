@@ -138,6 +138,7 @@
 #endif
 
 #if __GNUC__ >= 3
+// 告诉计算机走该分支的概率很大，让 CPU 优先考虑来预取该分支的代码。
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #else
