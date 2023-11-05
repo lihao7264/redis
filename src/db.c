@@ -176,7 +176,9 @@ robj *lookupKeyWriteOrReply(client *c, robj *key, robj *reply) {
  *
  * The program is aborted if the key already exists. */
 void dbAdd(redisDb *db, robj *key, robj *val) {
+    // 拷贝Key
     sds copy = sdsdup(key->ptr);
+    // 创建并插入新dictEntry
     dictEntry *de = dictAddRaw(db->dict, copy, NULL);
     serverAssertWithInfo(NULL, key, de != NULL);
     dictSetVal(db->dict, de, val);
@@ -756,22 +758,28 @@ void keysCommand(client *c) {
  * returned by the dictionary iterator into a list. */
 void scanCallback(void *privdata, const dictEntry *de) {
     void **pd = (void**) privdata;
+    // 第一个元素是adlist
     list *keys = pd[0];
+    // 第二个元素用于识别当前迭代的是什么结构
     robj *o = pd[1];
     robj *key, *val = NULL;
 
     if (o == NULL) {
+         // 使用SCAN迭代整个Redis DB的话，会走该分支
         sds sdskey = dictGetKey(de);
         key = createStringObject(sdskey, sdslen(sdskey));
     } else if (o->type == OBJ_SET) {
+         // 用SSCAN命令扫一个SET集合的话，会走该分支
         sds keysds = dictGetKey(de);
         key = createStringObject(keysds,sdslen(keysds));
     } else if (o->type == OBJ_HASH) {
+        // 使用HSCAN迭代哈希表的话，会走该分支
         sds sdskey = dictGetKey(de);
         sds sdsval = dictGetVal(de);
         key = createStringObject(sdskey,sdslen(sdskey));
         val = createStringObject(sdsval,sdslen(sdsval));
     } else if (o->type == OBJ_ZSET) {
+        // 使用ZSCAN迭代Sorted Set的话，会走该分支
         sds sdskey = dictGetKey(de);
         key = createStringObject(sdskey,sdslen(sdskey));
         val = createStringObjectFromLongDouble(*(double*)dictGetVal(de),0);

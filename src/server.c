@@ -231,6 +231,7 @@ void dictListDestructor(dict *d, void *val)
     listRelease((list*)val);
 }
 
+// 比较两个 sds 的值
 int dictSdsKeyCompare(dict *d, const void *key1,
         const void *key2)
 {
@@ -251,17 +252,20 @@ int dictSdsKeyCaseCompare(dict *d, const void *key1,
     UNUSED(d);
     return strcasecmp(key1, key2) == 0;
 }
-
+// robj类型进行销毁 
 void dictObjectDestructor(dict *d, void *val)
 {
     UNUSED(d);
     if (val == NULL) return; /* Lazy freeing will set value to NULL. */
+    // 引用次数减1，减到0就会释放
     decrRefCount(val);
 }
 
+// 字符串方式进行销毁
 void dictSdsDestructor(dict *d, void *val)
 {
     UNUSED(d);
+    // 释放sds
     sdsfree(val);
 }
 
@@ -403,13 +407,19 @@ dictType objectKeyHeapPointerValueDictType = {
 };
 
 /* Set dictionary type. Keys are SDS strings, values are not used. */
+// Set 数据类型对应的 dictType 实现
 dictType setDictType = {
+    // dictSdsHash函数底层使用siphash算法 
     dictSdsHash,               /* hash function */
+    // keyDup和valDup两个指针为NULL，表示不会对键值对进行复制
     NULL,                      /* key dup */
     NULL,                      /* val dup */
+    // set集合中只能存放字符串的key，所以比较函数和销毁函数按照字符串方式进行处理
     dictSdsKeyCompare,         /* key compare */
     dictSdsDestructor,         /* key destructor */
+    // set集合未使用到value，所以无需对应的销毁函数
     NULL                       /* val destructor */
+    // 未指定expandAllowed函数，默认支持扩容
 };
 
 /* Sorted sets hash (note: a skiplist is used in addition to the hash table) */
@@ -425,12 +435,18 @@ dictType zsetDictType = {
 
 /* Db->dict, keys are sds strings, vals are Redis objects. */
 dictType dbDictType = {
+    // dictSdsHash函数底层使用siphash算法 
     dictSdsHash,                /* hash function */
+    // keyDup和valDup两个指针为NULL，表示不会对键值对进行复制 
     NULL,                       /* key dup */
     NULL,                       /* val dup */
+    // key按照字符串方式进行比较 
     dictSdsKeyCompare,          /* key compare */
+    // key按照字符串方式进行销毁 
     dictSdsDestructor,          /* key destructor */
+    // Redis中每个value值都是robj类型，所以value按照robj类型进行销毁 
     dictObjectDestructor,       /* val destructor */
+    // 通过dictExpandAllowed函数决定是否扩容 
     dictExpandAllowed,          /* allow to expand */
     dictEntryMetadataSize       /* size of entry metadata in bytes */
 };
@@ -458,13 +474,20 @@ dictType commandTableDictType = {
 };
 
 /* Hash type hash table (note that small hashes are represented with listpacks) */
+// Hash 数据类型使用的 dictType 实现
 dictType hashDictType = {
+    // dictSdsHash函数底层就是使用siphash算法 
     dictSdsHash,                /* hash function */
+    // keyDup和valDup两个指针为NULL，表示不会对键值对进行复制
     NULL,                       /* key dup */
     NULL,                       /* val dup */
+    // 按照sds来比较Key
     dictSdsKeyCompare,          /* key compare */
+    // 按照sds来销毁Key
     dictSdsDestructor,          /* key destructor */
+    // 按照sds来销毁Key
     dictSdsDestructor,          /* val destructor */
+     // 默认允许扩容
     NULL                        /* allow to expand */
 };
 

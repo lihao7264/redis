@@ -33,9 +33,13 @@
 
 /* Node, List, and Iterator are the only data structures used currently. */
 
+ // adlist的节点
 typedef struct listNode {
+    // 前一个节点
     struct listNode *prev;
+    // 后面节点
     struct listNode *next;
+    // 存的数据
     void *value;
 } listNode;
 
@@ -44,12 +48,16 @@ typedef struct listIter {
     int direction;
 } listIter;
 
+// adlist的定义
 typedef struct list {
+    // 头指针
     listNode *head;
+    // 尾指针
     listNode *tail;
     void *(*dup)(void *ptr);
     void (*free)(void *ptr);
     int (*match)(void *ptr, void *key);
+    // 元素数
     unsigned long len;
 } list;
 
