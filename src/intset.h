@@ -32,9 +32,14 @@
 #define __INTSET_H
 #include <stdint.h>
 
+// 整型集合
+// intset 的头：由 encoding 和 length 两部分构成，共占 8 字节
 typedef struct intset {
+    // 编码类型
     uint32_t encoding;
+    // contents数组的长度
     uint32_t length;
+    // 柔性数组，不使用时不占用空间
     int8_t contents[];
 } intset;
 
