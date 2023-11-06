@@ -1035,18 +1035,26 @@ static int dictTypeExpandAllowed(dict *d) {
 }
 
 /* Expand the hash table if needed */
+// hash表示是否需要扩容：扩容条件
 static int _dictExpandIfNeeded(dict *d)
 {
     /* Incremental rehashing already in progress. Return. */
+    // 情况1：在rehash时不能扩容
     if (dictIsRehashing(d)) return DICT_OK;
 
     /* If the hash table is empty expand it to the initial size. */
+    // 如果第一张哈希表的大小是0，根据初始值DICT_HT_INITIAL_SIZE（默认为4）给它扩容
     if (DICTHT_SIZE(d->ht_size_exp[0]) == 0) return dictExpand(d, DICT_HT_INITIAL_SIZE);
 
     /* If we reached the 1:1 ratio, and we are allowed to resize the hash
      * table (global setting) or we should avoid it but the ratio between
      * elements/buckets is over the "safe" threshold, we resize doubling
      * the number of buckets. */
+    /**
+     * 情况3：两条件都满足则进行扩容
+     * 条件1：负载因子大于1 (d->ht_used[0] >= DICTHT_SIZE(d->ht_size_exp[0]))。
+     * 条件2：允许扩容dict_can_resize 或 负载因子大于指定阈值dict_force_resize_ratio（默认为5）
+    */
     if (d->ht_used[0] >= DICTHT_SIZE(d->ht_size_exp[0]) &&
         (dict_can_resize ||
          d->ht_used[0]/ DICTHT_SIZE(d->ht_size_exp[0]) > dict_force_resize_ratio) &&

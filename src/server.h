@@ -1259,7 +1259,9 @@ typedef struct zskiplist {
 } zskiplist;
 
 typedef struct zset {
+    // 字典：键为value，值为score
     dict *dict;
+    // 跳表：按分值进行排序
     zskiplist *zsl;
 } zset;
 

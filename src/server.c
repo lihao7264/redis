@@ -573,20 +573,24 @@ dictType sdsHashDictType = {
     dictVanillaFree,            /* val destructor */
     NULL                        /* allow to expand */
 };
-
+// 字典是否需缩容
 int htNeedsResize(dict *dict) {
     long long size, used;
 
     size = dictSlots(dict);
     used = dictSize(dict);
+    // 负载因子（used/size）小于0.1，则会进行缩容，默认HASHTABLE_MIN_FILL=10，把100移过来就是0.1
     return (size > DICT_HT_INITIAL_SIZE &&
             (used*100/size < HASHTABLE_MIN_FILL));
 }
 
 /* If the percentage of used slots in the HT reaches HASHTABLE_MIN_FILL
  * we resize the hash table to save memory */
+// 哈希表缩容
 void tryResizeHashTables(int dbid) {
+    // 是否需缩容
     if (htNeedsResize(server.db[dbid].dict))
+       // 重新调整大小（缩容）dictResize函数
         dictResize(server.db[dbid].dict);
     if (htNeedsResize(server.db[dbid].expires))
         dictResize(server.db[dbid].expires);
@@ -619,10 +623,13 @@ int incrementallyRehash(int dbid) {
  * memory pages are copied). The goal of this function is to update the ability
  * for dict.c to resize the hash tables accordingly to the fact we have an
  * active fork child running. */
+// 更新dict扩容策略
 void updateDictResizePolicy(void) {
     if (!hasActiveChildProcess())
+        // 2. 没有子进程的情况下，dict_can_resize = 1
         dictEnableResize();
     else
+       // 1. 有子进程的情况下，dict_can_resize = 0 
         dictDisableResize();
 }
 
@@ -992,6 +999,7 @@ void clientsCron(void) {
 /* This function handles 'background' operations we are required to do
  * incrementally in Redis databases, such as active key expiring, resizing,
  * rehashing. */
+// 定时检查
 void databasesCron(void) {
     /* Expire keys by random sampling. Not required for slaves
      * as master will synthesize DELs for us. */
@@ -1010,6 +1018,7 @@ void databasesCron(void) {
      * other processes saving the DB on disk. Otherwise rehashing is bad
      * as will cause a lot of copy-on-write of memory pages. */
     if (!hasActiveChildProcess()) {
+        // 在没有子进程时，会尝试缩容(resize)
         /* We use global counters so if we stop the computation at a given
          * DB we'll be able to start from the successive in the next
          * cron loop iteration. */
