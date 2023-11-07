@@ -218,7 +218,9 @@ int dictTryExpand(dict *d, unsigned long size) {
  * will visit at max N*10 empty buckets in total, otherwise the amount of
  * work it does would be unbound and the function may block for a long time. */
 // 渐进式 rehash 的实现
+// n：移动的哈希桶数(从哈希表1移动到哈希表2)、哈希表（数组）移动槽位
 int dictRehash(dict *d, int n) {
+    // 最多访问n*10个空桶，否则会阻塞过长时间
     int empty_visits = n*10; /* Max number of empty buckets to visit. */
     if (!dictIsRehashing(d)) return 0;
 
@@ -234,20 +236,24 @@ int dictRehash(dict *d, int n) {
             if (--empty_visits == 0) return 1;
         }
         // 步骤3.碰到一个非空的槽位，遍历该槽位下的链表进行rehash操作
+        //       要移动的哈希桶
         de = d->ht_table[0][d->rehashidx];
         /* Move all the keys in this bucket from the old to the new hash HT */
         while(de) {
+            // 遍历ht0中哈希桶中每个k-v对，都进行重新哈希
             uint64_t h;
 
             nextde = de->next;
             /* Get the index in the new hash table */
             h = dictHashKey(d, de->key) & DICTHT_SIZE_MASK(d->ht_size_exp[1]);
+            // 如果一个哈希桶有多个元素将dict接入哈希桶的头部
             de->next = d->ht_table[1][h];
             d->ht_table[1][h] = de;
             d->ht_used[0]--;
             d->ht_used[1]++;
             de = nextde;
         }
+        // 删除哈希桶
         d->ht_table[0][d->rehashidx] = NULL;
         d->rehashidx++;
     }
@@ -279,12 +285,13 @@ long long timeInMilliseconds(void) {
 /* Rehash in ms+"delta" milliseconds. The value of "delta" is larger 
  * than 0, and is smaller than 1 in most cases. The exact upper bound 
  * depends on the running time of dictRehash(d,100).*/
+// 定时任务触发rehash：rehash移动指定毫秒时间
 int dictRehashMilliseconds(dict *d, int ms) {
     if (d->pauserehash > 0) return 0;
 
     long long start = timeInMilliseconds();
     int rehashes = 0;
-
+    // 在指定毫秒时间内，每次挪动100个哈希桶，直到超时为止
     while(dictRehash(d,100)) {
         rehashes += 100;
         if (timeInMilliseconds()-start > ms) break;
